@@ -7,7 +7,8 @@ typedef struct {
 } Value;
 
 Value value_create_string(const char* str);
-
-void value_free(Value* value);
+Value value_create_list(void);
+void value_list_push_back(Value* list_val, const char* str);
+void value_free(Value* value); //devra prendre en compte liste et String
 
 #endif
