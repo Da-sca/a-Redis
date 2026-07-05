@@ -5,7 +5,7 @@
 #include "hash.h"
 
 int main(void) {
-    HashTable* ht = ht_create(4);   // on met 4 pour forcer le reszi
+    HashTable* ht = ht_create(5);   // on met 4 pour forcer le reszi
 
     for (int i = 0; i < 5; i++) {
         char key[20];
