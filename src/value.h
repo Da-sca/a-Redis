@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// --- TES STRUCTURES : La liste doublement chaînée ---
+// --- La liste doublement chaînée ---
 typedef struct CelluleListe {
     char* valeur;
     struct CelluleListe* prec;
@@ -15,30 +15,35 @@ typedef struct CelluleListe {
 typedef struct {
     CelluleListe* tete;
     CelluleListe* queue;
+    size_t taille;
 } ListeDouble;
 
-// --- L'ÉNUMÉRATION : Pour que le dictionnaire sache ce que contient la clé ---
 typedef enum {
     TYPE_STRING,
     TYPE_LIST
 } ValueType;
 
-// --- LA STRUCTURE GLOBALE COMPLÉTÉE AVEC TON UNION ---
+// --- Structure globale avec union ---
 typedef struct {
-    ValueType type; 
+    ValueType type;
     union {
-        char* str_value;          // Code initial de tes camarades
-        ListeDouble* list_value;  // Ton ajout pour la liste double
+        char* str_value;
+        ListeDouble* list_value;
     } data;
 } Value;
 
-// --- LES PROTOTYPES DES FONCTIONS ---
+// --- Prototypes ---
 Value value_create_string(const char* str);
-Value value_create_list(); 
+Value value_create_list(void);
 void value_free(Value* value);
 
-// Tes fonctions métiers pour l'API (LPUSH et RPUSH en O(1))
+int value_is_string(const Value* value);
+int value_is_list(const Value* value);
+
+// --- Opérations sur la liste ---
 void value_list_lpush(Value* value, const char* str);
 void value_list_rpush(Value* value, const char* str);
+char* value_list_lpop(Value* value);
+char* value_list_rpop(Value* value);
 
 #endif
