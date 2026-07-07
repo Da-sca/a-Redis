@@ -18,7 +18,6 @@ void cmd_set(HashTable* ht, const char* key, const char* value) {
 
 void cmd_get(HashTable* ht, const char* key) {
     Node* found = ht_get(ht, key);
-
     if (found == NULL) {
         printf("(nil)\n");
         return;
@@ -26,7 +25,22 @@ void cmd_get(HashTable* ht, const char* key) {
 
     if (value_is_string(&found->value)) {
         printf("%s\n", found->value.data.str_value);
-    } else {
+    }
+    else if (value_is_list(&found->value)) {
+        ListeDouble* l = found->value.data.list_value;
+        CelluleListe* current = l->tete;
+
+        printf("[");
+        while (current != NULL) {
+            printf("\"%s\"", current->valeur);
+            if (current->suiv != NULL) {
+                printf(", ");
+            }
+            current = current->suiv;
+        }
+        printf("]\n");
+    }
+    else {
         error_message();
     }
 }
