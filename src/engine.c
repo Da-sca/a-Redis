@@ -2,95 +2,120 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-void resize(HashTable* ht) {
-    int old_size = ht->size;
-    Node** old_array = ht->array;
-
-    ht->size = old_size * 2;
-    ht->array = (Node**)calloc(ht->size, sizeof(Node*));
-    ht->count = 0; // Réinitialisation pour recompter lors de la réinsertion
-
-    for (int i = 0; i < old_size; i++) {
-        Node* current = old_array[i];
-        while (current != NULL) {
-            Node* next = current->next;
-            
-            // Recalcul de l'index avec la nouvelle taille
-            unsigned int new_index = hash_function(current->key) % ht->size;
-            
-            // Insertion en tête dans le nouveau tableau
-            current->next = ht->array[new_index];
-            ht->array[new_index] = current;
-            ht->count++;
-            
-            current = next;
-        }
-    }
-    free(old_array);
-}
+#include "hashtable.h"
+#include "collision.h"
+#include "value.h"
 
 void cmd_set(HashTable* ht, const char* key, const char* value) {
-    // Redimensionnement automatique si > 75%
-    if ((float)(ht->count + 1) / ht->size > 0.75) {
-        resize(ht);
-    }
-
-    unsigned int index = hash_function(key) % ht->size;
-    Node* current = ht->array[index];
-
-    // Mise à jour si la clé existe
-    while (current != NULL) {
-        if (strcmp(current->key, key) == 0) {
-            free(current->value);
-            current->value = strdup(value);
-            return;
-        }
-        current = current->next;
-    }
-
-    // Insertion en tête (O(1))
-    Node* new_node = (Node*)malloc(sizeof(Node));
-    new_node->key = strdup(key);
-    new_node->value = strdup(value);
-    new_node->next = ht->array[index];
-    ht->array[index] = new_node;
-    ht->count++;
+    Value v = value_create_string(value);
+    insert_or_update(ht, key, v);
     printf("OK\n");
 }
 
 void cmd_get(HashTable* ht, const char* key) {
-    unsigned int index = hash_function(key) % ht->size;
-    Node* current = ht->array[index];
+    Node* found = ht_get(ht, key);
 
-    while (current != NULL) {
-        if (strcmp(current->key, key) == 0) {
-            printf("%s\n", current->value);
-            return;
-        }
-        current = current->next;
+    if (found == NULL) {
+        printf("(nil)\n");
+        return;
     }
-    printf("(nil)\n");
+
+    if (value_is_string(&found->value)) {
+        printf("%s\n", found->value.data.str_value);
+    } else {
+        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+    }
 }
 
 void cmd_del(HashTable* ht, const char* key) {
-    unsigned int index = hash_function(key) % ht->size;
-    Node* current = ht->array[index];
-    Node* prev = NULL;
+    int success = delete_from_bucket(ht, key);
+    printf(success ? "OK\n" : "(nil)\n");
+}
 
-    while (current != NULL) {
-        if (strcmp(current->key, key) == 0) {
-            if (prev == NULL) ht->array[index] = current->next;
-            else prev->next = current->next;
-            
-            free(current->key);
-            free(current->value);
-            free(current);
-            ht->count--;
-            printf("OK\n");
-            return;
+void cmd_lpush(HashTable* ht, const char* key, const char* value) {
+    Node* found = ht_get(ht, key);
+
+    if (found == NULL) {
+        // La clé n'existe pas encore → créer une nouvelle Value de type LIST
+        Value v = value_create_list();
+        value_list_lpush(&v, value);
+        insert_or_update(ht, key, v);
+        printf("(integer) 1\n");
+    }
+    else if (value_is_list(&found->value)) {
+        value_list_lpush(&found->value, value);
+        printf("(integer) %zu\n", found->value.data.list_value->taille);
+    }
+    else {
+        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+    }
+}
+
+void cmd_rpush(HashTable* ht, const char* key, const char* value) {
+    Node* found = ht_get(ht, key);
+
+    if (found == NULL) {
+        Value v = value_create_list();
+        value_list_rpush(&v, value);
+        insert_or_update(ht, key, v);
+        printf("(integer) 1\n");
+    }
+    else if (value_is_list(&found->value)) {
+        value_list_rpush(&found->value, value);
+        printf("(integer) %zu\n", found->value.data.list_value->taille);
+    }
+    else {
+        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+    }
+}
+
+void cmd_lpop(HashTable* ht, const char* key) {
+    Node* found = ht_get(ht, key);
+
+    if (found == NULL) {
+        printf("(nil)\n");
+        return;
+    }
+    if (!value_is_list(&found->value)) {
+        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        return;
+    }
+
+    char* popped = value_list_lpop(&found->value);
+    if (popped == NULL) {
+        printf("(nil)\n");
+    } else {
+        printf("%s\n", popped);
+        free(popped);
+
+        // Nettoyage automatique si la liste devient vide (comportement du vrai Redis)
+        if (found->value.data.list_value->taille == 0) {
+            delete_from_bucket(ht, key);
         }
-        prev = current;
-        current = current->next;
+    }
+}
+
+void cmd_rpop(HashTable* ht, const char* key) {
+    Node* found = ht_get(ht, key);
+
+    if (found == NULL) {
+        printf("(nil)\n");
+        return;
+    }
+    if (!value_is_list(&found->value)) {
+        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        return;
+    }
+
+    char* popped = value_list_rpop(&found->value);
+    if (popped == NULL) {
+        printf("(nil)\n");
+    } else {
+        printf("%s\n", popped);
+        free(popped);
+
+        if (found->value.data.list_value->taille == 0) {
+            delete_from_bucket(ht, key);
+        }
     }
 }

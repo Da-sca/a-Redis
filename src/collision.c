@@ -3,12 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * find_in_bucket : cherche un maillon dont la cle correspond exactement
- * a `key`, en parcourant la liste chainee a partir de `bucket_head`.
- *
- * Retourne le Node* trouve, ou NULL si la cle n'existe pas dans ce bucket.
- */
+// Retrouve un element precis dans un bucket
 Node* find_in_bucket(Node* bucket_head, const char* key) {
     Node* current = bucket_head;
 
@@ -103,4 +98,9 @@ int delete_from_bucket(HashTable* ht, const char* key) {
     }
 
     return 0; // cle non trouvee
+
+}
+Node* ht_get(HashTable* ht, const char* key) {
+    size_t index = hash_function(key) % ht->capacity;
+    return find_in_bucket(ht->buckets[index], key);
 }
