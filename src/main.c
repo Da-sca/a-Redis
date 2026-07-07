@@ -5,13 +5,11 @@
 #include "engine.h"
 
 int main(void) {
-    // 1. Initialisation : création de la table (capacité initiale de 5 par exemple)
     HashTable* ht = ht_create(5);
     
     char buffer[1024];
     printf("Bienvenue dans a-Redis. Commandes : SET <key> <val>, GET <key>, DEL <key>, EXIT\n");
 
-    // 2. Boucle interactive
     while (1) {
         printf("> ");
         if (!fgets(buffer, sizeof(buffer), stdin)) break;
@@ -56,7 +54,6 @@ int main(void) {
         }
     }
 
-    // 3. Nettoyage final : libération de la mémoire
     ht_destroy(ht);
     printf("Arrêt du moteur.\n");
     
