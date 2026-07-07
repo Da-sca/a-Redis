@@ -51,7 +51,7 @@ void value_list_lpush(Value* value, const char* str) {
 }
 // RPUSH — insertion en queue, O(1)
 void value_list_rpush(Value* value, const char* str) {
-    if (value_is_list(value)) return;
+    if (!value_is_list(value)) return;
 
     ListeDouble* l = value->data.list_value;
     CelluleListe* nouvelle = (CelluleListe*)malloc(sizeof(CelluleListe));
