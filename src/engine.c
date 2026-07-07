@@ -6,6 +6,10 @@
 #include "collision.h"
 #include "value.h"
 
+void error_message(void) {
+    printf("(error)Operation contre une cle ayant le mauvais type \n");
+}
+
 void cmd_set(HashTable* ht, const char* key, const char* value) {
     Value v = value_create_string(value);
     insert_or_update(ht, key, v);
@@ -23,7 +27,7 @@ void cmd_get(HashTable* ht, const char* key) {
     if (value_is_string(&found->value)) {
         printf("%s\n", found->value.data.str_value);
     } else {
-        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        error_message();
     }
 }
 
@@ -47,7 +51,7 @@ void cmd_lpush(HashTable* ht, const char* key, const char* value) {
         printf("(integer) %zu\n", found->value.data.list_value->taille);
     }
     else {
-        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        error_message();
     }
 }
 
@@ -65,7 +69,7 @@ void cmd_rpush(HashTable* ht, const char* key, const char* value) {
         printf("(integer) %zu\n", found->value.data.list_value->taille);
     }
     else {
-        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        error_message();
     }
 }
 
@@ -77,7 +81,7 @@ void cmd_lpop(HashTable* ht, const char* key) {
         return;
     }
     if (!value_is_list(&found->value)) {
-        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        error_message();
         return;
     }
 
@@ -103,7 +107,7 @@ void cmd_rpop(HashTable* ht, const char* key) {
         return;
     }
     if (!value_is_list(&found->value)) {
-        printf("(error) WRONGTYPE Operation against a key holding the wrong kind of value\n");
+        error_message();
         return;
     }
 
