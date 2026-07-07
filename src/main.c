@@ -2,32 +2,63 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hashtable.h"
-#include "hash.h"
+#include "engine.h"
 
 int main(void) {
-    HashTable* ht = ht_create(5);   // on met 4 pour forcer le reszi
+    // 1. Initialisation : création de la table (capacité initiale de 5 par exemple)
+    HashTable* ht = ht_create(5);
+    
+    char buffer[1024];
+    printf("Bienvenue dans a-Redis. Commandes : SET <key> <val>, GET <key>, DEL <key>, EXIT\n");
 
-    for (int i = 0; i < 5; i++) {
-        char key[20];
-        sprintf(key, "key%d", i);
+    // 2. Boucle interactive
+    while (1) {
+        printf("> ");
+        if (!fgets(buffer, sizeof(buffer), stdin)) break;
+        
+        // Nettoyage de la saisie
+        buffer[strcspn(buffer, "\n")] = 0;
 
-        Node* n = malloc(sizeof(Node));
-        n->key = strdup(key);
-        n->value = value_create_string("test");
-        n->next = NULL;
+        // Découpage en jetons
+        char* cmd = strtok(buffer, " ");
+        if (!cmd) continue;
 
-        size_t index = hash_function(n->key) % ht->capacity;
-        n->next = ht->buckets[index];
-        ht->buckets[index] = n;
-        ht->count++;
-
-        if (needs_resize(ht)) {
-            printf("Le resize est lancer ancienne capacite = %zu\n", ht->capacity);
-            ht_resize(ht);
-            printf("nouvelle capacite = %zu\n", ht->capacity);
+        if (strcmp(cmd, "EXIT") == 0) {
+            break;
+        } 
+        else if (strcmp(cmd, "SET") == 0) {
+            char* key = strtok(NULL, " ");
+            char* val = strtok(NULL, " ");
+            if (key && val) {
+                cmd_set(ht, key, val);
+            } else {
+                printf("Usage: SET <key> <value>\n");
+            }
+        } 
+        else if (strcmp(cmd, "GET") == 0) {
+            char* key = strtok(NULL, " ");
+            if (key) {
+                cmd_get(ht, key);
+            } else {
+                printf("Usage: GET <key>\n");
+            }
+        } 
+        else if (strcmp(cmd, "DEL") == 0) {
+            char* key = strtok(NULL, " ");
+            if (key) {
+                cmd_del(ht, key);
+            } else {
+                printf("Usage: DEL <key>\n");
+            }
+        } 
+        else {
+            printf("Commande inconnue : %s\n", cmd);
         }
     }
 
+    // 3. Nettoyage final : libération de la mémoire
     ht_destroy(ht);
+    printf("Arrêt du moteur.\n");
+    
     return 0;
 }
